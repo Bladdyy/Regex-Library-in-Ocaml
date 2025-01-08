@@ -10,9 +10,6 @@ type 'c reg =
 ;;
 
 
-
-
-
 (** {2 Wyrażenia regularne nad abstrakcyjnym alfabetem}*)
 
 
@@ -44,6 +41,7 @@ let rec simpl regex = match regex with
                   else if ret = Eps then Eps
                   else Star(ret)
 | _ -> regex;;
+
 
 (** Czy ε należy do języka? *)
 let rec nullable regex = match regex with
@@ -85,11 +83,13 @@ let rec der a r = match r with
 (** [ders v r] to pochodna [r] względem [v], czyli wyrażenie regularne [r'], 
     które akceptuje takie słowa [w], że słowo [vw] jest akceptowane przez [r].
     W implementacji należy użyć [der], niewątpliwie przyda się też [simpl]. *)
-val ders : 'c list -> 'c reg -> 'c reg
-let rec ders 
+let rec ders els regex = match els with
+| h :: t -> ders (t) (der h regex)
+| _ -> regex;;
+
 (** Czy słowo jest akceptowane przez wyrażenie regularne?
     W implementacji należy użyć [ders] i [nullable]. *)
-val accept : 'c reg -> 'c list -> bool
+let accept regex els = nullable (ders els regex);;
 
 
 (** Prezentacja wyrażenia regularnego w postaci napisu. *)
@@ -106,7 +106,6 @@ let repr conv regex =
   less_brackets regex false;; 
 
 
-
 (** {2 Użyteczne funkcje dla [char reg]} *)
 
 (** Wyrażenie regularne akceptujące język złożony z jednego jednoliterowego słowa. *)
@@ -116,14 +115,13 @@ let char ch = match ch with
 | _ -> Lit(ch);;
 
 
-
 (** Wyrażenie regularne akceptujące język złożony z jednego słowa. *)
 
 let string str = 
   let length = String.length str 
   in
-    if length = 0 then Eps 
-    else String.fold_right(fun c e -> Concat(Lit(c), e)) (String.sub str 0 (length - 1)) (Lit(str.[length - 1]));;
+  if length = 0 then Eps 
+  else String.fold_right(fun c e -> Concat(Lit(c), e)) (String.sub str 0 (length - 1)) (Lit(str.[length - 1]));;
 
 
 (** Wyrażenie regularne akceptujace język złożony z jednoliterowych słów 
@@ -132,12 +130,15 @@ let string str =
 let alts str = 
   let length = String.length str 
   in
-    if length = 0 then Eps 
-    else String.fold_right(fun c e -> Or(Lit(c), e)) (String.sub str 0 (length - 1)) (Lit(str.[length - 1]));;
+  if length = 0 then Eps 
+  else String.fold_right(fun c e -> Or(Lit(c), e)) (String.sub str 0 (length - 1)) (Lit(str.[length - 1]));;
 
 
 (** Specjalizacja accept dla [char reg] i [string]. *)
-val accepts : char reg -> string -> bool
+let accepts regex s = 
+  let list = String.fold_right (fun c acc -> c :: acc) s [] 
+  in 
+  accept regex list;;
 
 
 (** Zamiana [char reg] na napis. Proszę postarać się o niewstawianie niepotrzebnych nawiasów. *)
