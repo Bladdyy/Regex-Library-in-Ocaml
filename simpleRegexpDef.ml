@@ -97,8 +97,8 @@ let repr conv regex =
   let rec less_brackets reg is_or = match reg with
     | Lit(l) -> conv(l)
     | Concat(reg1, reg2) ->  less_brackets reg1 false ^ less_brackets reg2 false
-    | Or(reg1, reg2) -> if is_or = true then less_brackets reg1 true ^ " + " ^ less_brackets reg2 true
-                        else "(" ^ less_brackets reg1 true ^ " + " ^ less_brackets reg2 true  ^ ")"
+    | Or(reg1, reg2) -> if is_or = true then less_brackets reg1 true ^ "|" ^ less_brackets reg2 true
+                        else "(" ^ less_brackets reg1 true ^ "|" ^ less_brackets reg2 true  ^ ")"
     | Star(reg1) -> "(" ^ less_brackets reg1 true ^ ")*"
     | Eps -> "ε"
     | Empty -> "∅"
@@ -146,8 +146,8 @@ let to_string regex =
   let rec less_brackets reg is_or = match reg with
     | Lit(l) -> l
     | Concat(reg1, reg2) ->  less_brackets reg1 false ^ less_brackets reg2 false
-    | Or(reg1, reg2) -> if is_or = true then less_brackets reg1 true ^ " + " ^ less_brackets reg2 true
-                        else "(" ^ less_brackets reg1 true ^ " + " ^ less_brackets reg2 true  ^ ")"
+    | Or(reg1, reg2) -> if is_or = true then less_brackets reg1 true ^ "|" ^ less_brackets reg2 true
+                        else "(" ^ less_brackets reg1 true ^ "|" ^ less_brackets reg2 true  ^ ")"
     | Star(reg1) -> "(" ^ less_brackets reg1 true ^ ")*"
     | Eps -> "ε"
     | Empty -> "∅"
