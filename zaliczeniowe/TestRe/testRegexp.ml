@@ -1,9 +1,12 @@
-module Test(Re : REGEXP)  = struct
+open Regexp
+
+module Test(Re : REGEXP) = struct
 
     (** {2 Elementy pomocnicze} *)
     
     (** Język to zbiór słów. Użyj modułu [Set] lub podobnego. *)
-    type lang = Set.Make(String).t
+    module StringSet = Set.Make(String)
+    type lang = StringSet.t
 
     (** Tworzenie losowego zbioru słów z podanych liter. Do losowania należy 
         używać modułu [Random], parametr liczbowy powinien jakoś określać rozmiar 
@@ -13,16 +16,17 @@ module Test(Re : REGEXP)  = struct
       let rec gen_word todo acc =
         if todo <= 0 then acc
         else 
-          let len = Random.int (2 * num + 8) and strlen = String.length str
+          let len = Random.int (2 * num + 7) + 1 
+          and strlen = String.length str
           in
           let word = String.init len (fun _ -> str.[Random.int (strlen)])
           in
-          set = StringSet.add word acc
+          let set = StringSet.add word acc
           in
-          if set.cardinal = acc.cardinal then gen_word todo acc
-          else gen_word (todo - 1) (acc)
+          if StringSet.cardinal set = StringSet.cardinal acc then gen_word todo acc
+          else gen_word (todo - 1) (set)
       in
-      gen_word num, Set.Make(String)
+      gen_word num StringSet.empty
 
 
       
@@ -42,17 +46,20 @@ module Test(Re : REGEXP)  = struct
         Ostatni parametr boolowski może służyć zwiększeniu poziomu wypisywania 
         szczegółów działania (debug on/off). *)
     let test_two regex1 regex2 lang debug =
-      let start = Sys.time() 
+      let start_time = Sys.time() 
       in
       let lang1 = select_accepted regex1 lang 
       and lang2 = select_accepted regex2 lang
       in
-      let end = Sys.time()
+      let end_time = Sys.time()
       in
       if debug then (
-        Printf.printf "TEMP\n";
+        Re.debug regex1;
+        Re.debug regex2;
       );
-      (StringSet.equal lang1 lang2 then 0 else 1, end_time -. start_time)
+      let error = if StringSet.equal lang1 lang2 then 0 else 1
+      in
+      (error, start_time -. end_time)
 
 
     (** Najważniejsza funkcja w funktorze testującym. Uruchamia wszystkie testy 
@@ -71,18 +78,30 @@ module Test(Re : REGEXP)  = struct
 
       let regex1 = Re.re "ba*b" 
       and regex2 = Re.re "a*b" 
-      and mals = [
+      and long_a = String.make 1000000 'a'
+      in
+      let mals1 = [
         ("baabaabaaab", false);
         ("baaaaaaab", true);
+        ("b" ^ long_a ^ "b", true);
+        ("b" ^ long_a ^ String.make 10000 'b' ^ "aab", false)        
+      ]
+      and mals2 = [
         ("aaaaaaa", false);
-        ("aaaaab", true)
-      ] 
+        ("aaaaab", true);
+        (long_a ^ "b", true)
+      ]
       in
-      List.iter (fun (s, expected) ->
-        if Re.matches regex1 s <> expected then incr errors;
-      ) mals;
-  
+      let start_time = Sys.time()
+      in
+      List.iter (fun (s, expected) -> if Re.matches regex1 s <> expected then errors := !errors + 1) mals1;
+      total_time := !total_time +. (start_time -. Sys.time());
 
+      let start_time = Sys.time()
+      in
+      List.iter (fun (s, expected) -> if Re.matches regex2 s <> expected then errors := !errors + 1) mals2;
+      total_time := !total_time +. (start_time -. Sys.time());
+        
       (* 2. Porównanie r*r i rr* za pomocą [test_two]:
          - a*a i aa* na języku złożonym z liter a b 
          - (a|b)*(a|b) i (a|b)(a|b)* na języku złożonym z a b c *)
@@ -98,7 +117,6 @@ module Test(Re : REGEXP)  = struct
       in
       errors := !errors + err;
       total_time := !total_time +. time;
-      in
       let err, time = test_two regex5 regex6 lang2 false 
       in
       errors := !errors + err;
@@ -116,14 +134,23 @@ module Test(Re : REGEXP)  = struct
       total_time := !total_time +. time;
   
       (* 4. Jedna lub dwie własne nietrywialne propozycje. *)
-      let regex9 = Re.re "(a|b)*" 
-      and regex10 = Re.re "(a|b|c)*"
-      and lang3 = make_lang "abc" 500 
+      let regex9 = Re.re "(a|b|c)*(d|e)*(a|b|c)*" 
+      and regex10 = Re.re "(a*b*c*)*(d*e*)*(a*b*c*)*"
+      and lang3 = make_lang "abcde" 1000 
       in
       let err, time = test_two regex9 regex10 lang3 false
       in
       errors := !errors + err;
       total_time := !total_time +. time;
+
+      let regex11 = Re.re "((a|b|c)*(c|d|e))*" 
+      and regex12 = Re.re "((a*b*c*)*c|(a*b*c*)*d|(a*b*c*)*e)*"
+      in
+      let err, time = test_two regex11 regex12 lang3 false
+      in
+      errors := !errors + err;
+      total_time := !total_time +. time;
+
   
       (* Wynik końcowy *)
       (!errors, !total_time)
