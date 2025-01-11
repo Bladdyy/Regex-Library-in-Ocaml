@@ -2,16 +2,16 @@ open TestRe
 open Regexp
 (* Moduł zimplementowany dla SimpleRegexp *)
 
-module SimpleRegexp : REGEXP = struct
+module Simple: REGEXP = struct
   include ReSimple
 end
 
-module KitRegexp : REGEXP = struct
+module Kit : REGEXP = struct
   include ReKit
 end
 
-module SimpleTester = TestRegexp.Test(SimpleRegexp)
-module KitTester = TestRegexp.Test(KitRegexp)
+module SimpleTester = TestRegexp.Test(Simple)
+module KitTester = TestRegexp.Test(Kit)
 
 let () =
   (* Uruchamianie testów dla SimpleRegexp *)
