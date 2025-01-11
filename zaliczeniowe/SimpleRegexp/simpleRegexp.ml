@@ -13,6 +13,16 @@ type 'c reg = 'c SimpleRegexpDef.reg
     itp.
     *)
 
+let rec check_equal r1 r2 = match (r1, r2) with
+| (Lit a, Lit b) -> if a = b then true else false
+| (Concat (r11, r12), Concat (r21, r22)) -> if check_equal r11 r21 = true && check_equal r12 r22 = true then true else false
+| (Or (r11, r12), Or (r21, r22)) -> if check_equal r11 r21 = true && check_equal r12 r22 = true then true else false
+| (Star (r11), Star (r22)) -> check_equal r11 r22 
+| (Eps, Eps) -> true
+| (Empty, Empty) -> true
+| _ -> false
+
+
 let rec simpl regex = match regex with
 | Concat (reg1, reg2) -> let ret1 = simpl(reg1) and ret2 = simpl(reg2)
                           in
@@ -20,10 +30,14 @@ let rec simpl regex = match regex with
                           else if ret1 = Eps then ret2
                           else if ret2 = Eps then ret1
                           else Concat(ret1, ret2)
+| Or (Or (reg1, reg2), reg3) -> let ret1 = simpl reg1 and ret2 = simpl reg2 and ret3 = simpl(reg3)
+                                in
+                                if check_equal ret1 ret3 = true || check_equal ret2 ret3 = true then simpl (Or (ret1, ret2))
+                                else Or (simpl (Or (reg1, reg2)), ret3)
+
 | Or (reg1, reg2) -> let ret1 = simpl(reg1) and ret2 = simpl(reg2)
                       in
-                      if ret1 = Empty && ret2 = Empty then Empty
-                      else if ret1 = Eps && ret2 = Eps then Eps
+                      if check_equal ret1 ret2 = true then ret1
                       else if ret1 = Empty then ret2
                       else if ret2 = Empty then ret1
                       else Or (ret1, ret2)
@@ -148,26 +162,3 @@ let to_string regex =
 
 (** Zamiana napisu na wyrażenie regularne. Proszę zajrzeć do {!README.md}. *)
 let parse s = Parser.regex Lexer.token (Lexing.from_string s)
-
-
-
-
-
-
-
-
-
-
-
-
-  (* EXAMPLES TEMP *)
-
-  (*  to_string (Or (Lit "a", Or (Lit "b", Or (Lit "c", Star (Or (Lit "s", Or(Lit "d", Concat (Star(Eps), Eps))))))));;  *)
-
-  (*  der "a" (Concat (Or(Lit("a"), Star(Lit("a"))), Or(Eps, Lit("6"))));;  *)
-  (*  der "a" (Lit("a"));;  *)
-
-  (*  Concat (Or (Eps, Lit 4), Star (Or (Eps, Lit 5)))  *)
-  (*  der "a" (Concat(Or(Concat(Star(Lit("a")), Lit("a")), Concat(Lit("a"), Lit("b"))), Lit("c")));;  *)
-  (*  der "a" (Concat(Concat(Star(Lit("a")), Lit("a")), Lit("c")));;  *)
-  (*  der "b" (Concat(Star(Lit("a")), Concat(Lit("b"), Lit("c"))));;  *)
