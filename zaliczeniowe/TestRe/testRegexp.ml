@@ -176,7 +176,7 @@ module Test(Re : REGEXP) = struct
       total_time := !total_time +. time;
       
       (* Bad Test (not included in final error count) *)
-      Printf.printf "\nTest with intentional error\n\n";
+      Printf.printf "\nTest with an intentional error\n\n";
       let lang4 = make_lang "ab" 1000
       and regex13 = Re.re "a*" 
       and regex14 = Re.re "b*" 
