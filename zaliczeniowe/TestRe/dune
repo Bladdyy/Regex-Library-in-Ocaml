@@ -1,4 +1,4 @@
 (library
- (name testRegexp)
+ (name testRe)
  (libraries base stdlib)
  (modules regexp testRegexp))
