@@ -1,0 +1,5 @@
+(library
+ (name ReKit)
+ (modules ReKit)
+ (libraries testRe ocamlregextkit))
+
